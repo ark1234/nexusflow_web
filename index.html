@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NexusFlow: Unifying Disparate Tasks under Partial Supervision via Invertible Flow Networks</title>
+
+<meta name="description" content="NexusFlow is a lightweight, plug-and-play module for Partially Supervised Multi-Task Learning that aligns latent feature distributions across structurally disparate tasks via invertible coupling layers." />
+<meta property="og:title" content="NexusFlow: Unifying Disparate Tasks under Partial Supervision via Invertible Flow Networks" />
+<meta property="og:description" content="A simple yet general framework for PS-MTL across structurally disparate, domain-partitioned tasks. SOTA on nuScenes (mapping + tracking) and NYUv2 (seg/depth/normal)." />
+<meta property="og:image" content="static/images/nexusflow_probsetup.png" />
+<meta property="og:type" content="website" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="static/css/style.css" />
+</head>
+<body>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="container">
+    <p class="venue">CVPR 2026 &nbsp;·&nbsp; Paper #7426</p>
+    <h1>
+      <span class="brand">NexusFlow:</span>
+      Unifying Disparate Tasks under Partial Supervision
+      <br /><small style="font-weight:500; color:var(--muted); font-size:0.7em;">via Invertible Flow Networks</small>
+    </h1>
+
+    <p class="authors">
+      Fangzhou Lin<sup>1,2,3</sup>, Yuping Wang<sup>4</sup>, Yuliang Guo<sup>5†</sup>, Zixun Huang<sup>5</sup>, Xinyu Huang<sup>5</sup>,<br />
+      Haichong Zhang<sup>1</sup>, Kazunori Yamada<sup>3</sup>, Zhengzhong Tu<sup>2★</sup>, Liu Ren<sup>5</sup>, Ziming Zhang<sup>1★</sup>
+    </p>
+    <p class="affiliations">
+      <sup>1</sup>Worcester Polytechnic Institute &nbsp;&middot;&nbsp;
+      <sup>2</sup>Texas A&amp;M University &nbsp;&middot;&nbsp;
+      <sup>3</sup>Tohoku University &nbsp;&middot;&nbsp;
+      <sup>4</sup>University of Michigan &nbsp;&middot;&nbsp;
+      <sup>5</sup>Bosch Research North America &amp; Bosch Center for AI
+    </p>
+    <p class="corresponding">
+      <sup>†</sup>Project lead &nbsp;·&nbsp; <sup>★</sup>Corresponding authors
+    </p>
+
+    <div class="badges">
+      <a class="badge" href="#" target="_blank" rel="noopener" id="paper-link">📄 Paper (soon)</a>
+      <a class="badge alt" href="#" target="_blank" rel="noopener" id="arxiv-link">arXiv (soon)</a>
+      <a class="badge outline" href="https://github.com/ark1234/NexusFlow" target="_blank" rel="noopener">⌨ Code</a>
+      <a class="badge outline" href="#video">🎬 Video</a>
+      <a class="badge outline" href="#method">Method</a>
+      <a class="badge outline" href="#bibtex">📑 BibTeX</a>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== TEASER ===================== -->
+<section id="teaser">
+  <div class="container">
+    <div class="figure">
+      <img src="static/images/nexusflow_probsetup.png" alt="NexusFlow problem setup" />
+      <div class="caption">
+        <strong>Problem Setup &amp; Motivation.</strong>
+        We study <em>Partially Supervised Multi-Task Learning</em> with autonomous driving as a representative example.
+        (a) In the ideal case, all data are fully annotated for all tasks; mixed training reaches the upper bound of MTL performance.
+        (b) In practice, community datasets are usually single-task and differ across task labels <em>and</em> domains (e.g., geographic gaps);
+        naive mixing yields incomplete supervision and poor cross-domain generalization.
+        (c) Our goal is to bridge both task and domain gaps via a simple latent-space migration strategy.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ABSTRACT ===================== -->
+<section id="abstract">
+  <div class="container">
+    <h2>Abstract</h2>
+    <p class="lead">
+      Partially Supervised Multi-Task Learning (PS-MTL) aims to leverage knowledge across tasks when annotations are
+      incomplete. Existing approaches, however, have largely focused on the simpler setting of homogeneous, dense prediction
+      tasks, leaving the more realistic challenge of learning from <em>structurally diverse</em> tasks unexplored.
+    </p>
+    <p>
+      To this end, we introduce <strong>NexusFlow</strong>, a novel, lightweight, and plug-and-play framework effective in
+      <em>both</em> settings. NexusFlow inserts a set of surrogate networks with <strong>invertible coupling layers</strong>
+      to align the latent feature distributions of tasks, creating a unified representation that enables effective
+      cross-task knowledge transfer. The coupling layers are bijective, preserving information while mapping features
+      into a shared canonical space &mdash; avoiding representational collapse and enabling alignment across
+      structurally different tasks without reducing expressive capacity.
+    </p>
+    <p>
+      We first evaluate NexusFlow on the core challenge of <strong>domain-partitioned autonomous driving</strong>, where
+      dense map reconstruction and sparse multi-object tracking are supervised in different geographic regions, creating
+      both structural disparity and a strong domain gap. NexusFlow sets a new state-of-the-art on <strong>nuScenes</strong>,
+      outperforming strong partially supervised baselines.
+      To demonstrate generality, we further test NexusFlow on <strong>NYUv2</strong> using three homogeneous dense
+      prediction tasks &mdash; segmentation, depth, and surface normals &mdash; as a representative <em>N</em>-task PS-MTL
+      scenario. NexusFlow yields consistent gains across all tasks, confirming its broad applicability.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== VIDEO COMPARISON ===================== -->
+<section id="video">
+  <div class="container">
+    <h2>Qualitative Video Comparison on nuScenes</h2>
+    <p>
+      Side-by-side comparison of the <strong>UniAD baseline</strong> (trained under partial supervision) and
+      <strong>NexusFlow</strong> on the same nuScenes sequences, jointly predicting <em>multi-object tracking</em>
+      and <em>online map reconstruction</em>. NexusFlow produces noticeably cleaner map elements (lanes, dividers,
+      drivable areas) and more stable object tracks, especially in regions where the baseline lacks task annotations.
+    </p>
+
+    <div class="video-grid">
+      <div class="video-card">
+        <div class="video-label baseline">Baseline (UniAD, PS-MTL)</div>
+        <video controls muted loop playsinline preload="metadata">
+          <source src="static/videos/baseline.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <div class="video-card">
+        <div class="video-label ours">Ours &mdash; NexusFlow</div>
+        <video controls muted loop playsinline preload="metadata">
+          <source src="static/videos/nexusflow.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    </div>
+
+    <div class="video-controls">
+      <button class="tab-btn active" id="play-both">▶ Play both</button>
+      <button class="tab-btn" id="pause-both">⏸ Pause both</button>
+      <button class="tab-btn" id="sync-both">↺ Sync &amp; restart</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== METHOD / PIPELINE ===================== -->
+<section id="method">
+  <div class="container">
+    <h2>NexusFlow Pipeline</h2>
+    <p>
+      NexusFlow is a simple yet general framework that scales to the <em>N</em>-task partially supervised MTL setting.
+      Given a data batch where only certain tasks are annotated, we extract latent features <em>h<sub>i</sub></em> from
+      all <em>N</em> task heads. These features are then encoded into a shared representation space
+      <em>{z<sub>i</sub>}</em> via <strong>invertible coupling layers</strong>, where the model minimizes the distance
+      between each <em>z<sub>i</sub></em> and their mean to promote cross-task consistency.
+    </p>
+    <div class="figure">
+      <img src="static/images/nexusflow_pipe.png" alt="NexusFlow pipeline" style="max-width: 920px;" />
+      <div class="caption">
+        For each task we attach a lightweight surrogate network: a deformable-attention feature reducer squashes the
+        large BEV feature map into a compact vector, which is then transformed by an invertible coupling layer into a
+        canonical space. An MSE alignment loss across canonical vectors pulls task distributions together.
+      </div>
+    </div>
+
+    <h3>Key design choices</h3>
+    <ul class="checklist">
+      <li><strong>Invertible (bijective) coupling layers</strong> preserve all task-relevant information while enabling
+        flexible feature transformation &mdash; preventing the representational collapse common to vanilla CNN aligners.</li>
+      <li><strong>Plug-and-play</strong>: no change to existing task heads or losses. Drop NexusFlow alongside any
+        BEV-based perception backbone and add <em>L<sub>align</sub></em> to the total loss.</li>
+      <li><strong>O(N) scaling</strong>: one surrogate branch per task, trivially extensible to 3+ tasks
+        (validated on NYUv2 with seg + depth + normal).</li>
+      <li><strong>Theoretically grounded</strong>: invertibility yields a provable bound on feature discrepancy,
+        formally connecting alignment loss to cross-task knowledge transfer.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================== ANALYSIS ===================== -->
+<section id="analysis">
+  <div class="container">
+    <h2>What Does Alignment Look Like?</h2>
+    <p>
+      We visualize the latent feature distributions of the two disparate tasks before and after applying NexusFlow.
+      Without alignment, tracking and mapping features form disjoint clusters; NexusFlow pulls them into a unified
+      canonical space without collapsing either task's information.
+    </p>
+    <div class="figure">
+      <img src="static/images/tsne_v5.png" alt="t-SNE of latent features before vs after NexusFlow" />
+      <div class="caption">t-SNE visualization of latent task features &mdash; baseline (left) vs.&nbsp;NexusFlow-aligned (right).</div>
+    </div>
+    <div class="figure">
+      <img src="static/images/eigenvalue_plot.png" alt="Eigenvalue spectrum of feature covariance" style="max-width:680px;" />
+      <div class="caption">
+        Eigenvalue spectrum of the feature covariance. NexusFlow maintains a broad, well-spread spectrum, indicating
+        that the bijective coupling layers <strong>preserve dimensionality</strong> &mdash; in stark contrast to
+        non-invertible aligners which collapse the spectrum and lose task-relevant capacity.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== QUALITATIVE RESULTS ===================== -->
+<section id="qualitative">
+  <div class="container">
+    <h2>Qualitative Results on nuScenes</h2>
+    <p>
+      Beyond quantitative SOTA, NexusFlow visibly improves both tasks: lane and divider reconstructions are crisper
+      and topologically consistent, while object tracks remain stable even when only the other task was supervised in
+      the corresponding region.
+    </p>
+    <div class="figure">
+      <img src="static/images/vis_v4.png" alt="Qualitative comparison on nuScenes — mapping" />
+      <div class="caption">Map reconstruction comparison. NexusFlow recovers fine-grained structure that the partially supervised baseline misses.</div>
+    </div>
+    <div class="figure">
+      <img src="static/images/vis2_v2.png" alt="Qualitative comparison on nuScenes — tracking" />
+      <div class="caption">Multi-object tracking comparison under domain-partitioned supervision.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CODE SNIPPET ===================== -->
+<section id="code">
+  <div class="container">
+    <h2>Drop-in Usage</h2>
+    <p>
+      NexusFlow is designed to be a tiny, self-contained module. Below is the full integration recipe for a
+      BEV-based perception model &mdash; just a few lines on top of your existing training loop.
+    </p>
+    <div class="codeblock">
+      <button class="copy-btn" id="copy-code">Copy</button>
+<pre id="code-block"># 1. Instantiate alongside your main model
+nexusflow = NexusFlow(bev_channels=256, reduced_dim=256)
+
+# 2. Inside your training loop ...
+bev_feature = model.bev_encoder(x)             # (B, C, H, W)
+
+map_out   = model.map_decoder(bev_feature)
+track_out = model.track_decoder(bev_feature)
+l_task    = partial_loss(map_out, track_out, labels, mask)
+
+# 3. Alignment loss from NexusFlow
+z_map, z_track = nexusflow(bev_feature)
+l_align        = F.mse_loss(z_map, z_track)
+
+# 4. Combine and backprop
+total_loss = l_task + lambda_align * l_align
+total_loss.backward()
+optimizer.step()</pre>
+    </div>
+    <p class="muted" style="margin-top:14px;">
+      Full reference implementation: <a href="static/NexusFlow.py">static/NexusFlow.py</a>
+      &nbsp;·&nbsp; Repository: <a href="https://github.com/ark1234/NexusFlow" target="_blank" rel="noopener">github.com/ark1234/NexusFlow</a>
+    </p>
+  </div>
+</section>
+
+<!-- ===================== BIBTEX ===================== -->
+<section id="bibtex">
+  <div class="container">
+    <h2>Citation</h2>
+    <div class="bibtex">
+      <button class="copy-btn" id="copy-bibtex">Copy</button>
+<code id="bibtex-block">@inproceedings{lin2026nexusflow,
+  title     = {NexusFlow: Unifying Disparate Tasks under Partial Supervision via Invertible Flow Networks},
+  author    = {Lin, Fangzhou and Wang, Yuping and Guo, Yuliang and Huang, Zixun and Huang, Xinyu and Zhang, Haichong and Yamada, Kazunori and Tu, Zhengzhong and Ren, Liu and Zhang, Ziming},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2026}
+}</code>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="container">
+    <p>
+      Page template adapted from <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank" rel="noopener">Academic Project Page Template</a>, inspired by
+      <a href="https://nerfies.github.io" target="_blank" rel="noopener">Nerfies</a>. Source available on
+      <a href="https://github.com/ark1234/NexusFlow" target="_blank" rel="noopener">GitHub</a>.
+    </p>
+    <p class="muted">© 2026 NexusFlow authors. Licensed under CC-BY-SA-4.0.</p>
+  </div>
+</footer>
+
+<script>
+  // Video controls
+  const vids = document.querySelectorAll('.video-card video');
+  document.getElementById('play-both').addEventListener('click', () => vids.forEach(v => v.play()));
+  document.getElementById('pause-both').addEventListener('click', () => vids.forEach(v => v.pause()));
+  document.getElementById('sync-both').addEventListener('click', () => {
+    vids.forEach(v => { v.pause(); v.currentTime = 0; });
+    vids.forEach(v => v.play());
+  });
+
+  // Copy BibTeX
+  document.getElementById('copy-bibtex').addEventListener('click', async () => {
+    const text = document.getElementById('bibtex-block').innerText;
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('copy-bibtex');
+      const old = btn.innerText; btn.innerText = '✓ Copied'; setTimeout(() => btn.innerText = old, 1500);
+    } catch (e) { console.warn(e); }
+  });
+
+  // Copy code snippet
+  document.getElementById('copy-code').addEventListener('click', async () => {
+    const text = document.getElementById('code-block').innerText;
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('copy-code');
+      const old = btn.innerText; btn.innerText = '✓ Copied'; setTimeout(() => btn.innerText = old, 1500);
+    } catch (e) { console.warn(e); }
+  });
+</script>
+</body>
+</html>
