@@ -175,11 +175,9 @@ section .lead { font-size: 1.05rem; color: #2c3340; }
 }
 
 /* ---------- Video Comparison ---------- */
-/* The clips are ultra-wide (~3.7:1), so they are stacked vertically and
-   each spans the full (widened) container — far more readable than a
-   short side-by-side pair. */
-#video .container { max-width: 1400px; }
-
+/* The clips are ultra-wide (~3.7:1), so they are stacked vertically.
+   The section uses the standard 1100px container, consistent with all
+   other sections of the page. */
 .video-grid {
   display: grid;
   grid-template-columns: 1fr;
