@@ -175,6 +175,10 @@ section .lead { font-size: 1.05rem; color: #2c3340; }
 }
 
 /* ---------- Video Comparison ---------- */
+/* Video section breaks out wider than the standard container so the
+   side-by-side comparison reads larger (~1/3 bigger). */
+#video .container { max-width: 1500px; }
+
 .video-grid {
   display: grid;
   grid-template-columns: 1fr;
