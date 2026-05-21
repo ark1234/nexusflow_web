@@ -168,6 +168,53 @@
       <li><strong>Theoretically grounded</strong>: invertibility yields a provable bound on feature discrepancy,
         formally connecting alignment loss to cross-task knowledge transfer.</li>
     </ul>
+
+    <h3>What does this mean in simplist, minimal PyTorch?</h3>
+    <section id="code">
+      <div class="container">
+        <div class="codeblock">
+          <button class="copy-btn" id="copy-code">Copy</button>
+    <pre id="code-block">
+      # 1. Assume you have two task heads, each producing an intermediate embedding 
+      #    (e.g., after flattening the outputs of the BEV encoder).
+      x_map   = ...   # (B, h_dim)
+      x_track = ...   # (B, h_dim)
+
+      # 2. Make sure the hidden_dim can be splitted into two halves for the coupling layer.
+      assert h_dim % 2 == 0, "Hidden dimension must be even for coupling layers"
+
+      # 3. Split the features into two halves.
+      x_map_1,   x_map_2   = x_map.chunk(2,   dim=-1)   # (B, h_dim//2), (B, h_dim//2)
+      x_track_1, x_track_2 = x_track.chunk(2, dim=-1)   # (B, h_dim//2), (B, h_dim//2)
+
+      # 4. Predict scale and shift for both tasks using the first half of the features.
+      #    The MLP is implemented to double the output dimension, so we can split it into scale and shift.
+      scale_map,   shift_map   = MLP(x_map_1).chunk(2,   dim=-1)  # (B, h_dim//2), (B, h_dim//2)
+      scale_track, shift_track = MLP(x_track_1).chunk(2, dim=-1)  # (B, h_dim//2), (B, h_dim//2)
+
+      # 5. Stablize training by constraining the scale.
+      scale_map   = torch.tanh(scale_map)
+      scale_track = torch.tanh(scale_track)
+
+      # 6. Scale and shift the second half of the original features. 
+      #    This is the core invertible operation.
+      z_map_2   = x_map_2   * torch.exp(scale_map)   + shift_map    # (B, h_dim//2)
+      z_track_2 = x_track_2 * torch.exp(scale_track) + shift_track  # (B, h_dim//2)
+
+      # 7. The first half of the features remain unchanged, 
+      #    and we concatenate them back to get the final aligned features.
+      z_map   = torch.cat([x_map_1,   z_map_2],   dim=-1)  # (B, h_dim)
+      z_track = torch.cat([x_track_1, z_track_2], dim=-1)  # (B, h_dim)
+
+      # 8. Compute the alignment loss (e.g., MSE between the aligned features of the two tasks).
+      loss_align = F.mse_loss(z_map, z_track)
+      loss += lambda_align * loss_align
+    </section>
+
+    </pre>
+      </div>
+        <a href="#drop-in-usage">Note: we package this code in our NexusFlow class.</a>
+      </div>
   </div>
 </section>
 
@@ -218,10 +265,10 @@
 <!-- ===================== CODE SNIPPET ===================== -->
 <section id="code">
   <div class="container">
-    <h2>Drop-in Usage</h2>
+    <h2 id="drop-in-usage">Drop-in Usage</h2>
     <p>
       NexusFlow is designed to be a tiny, self-contained module. Below is the full integration recipe for a
-      BEV-based perception model &mdash; just a few lines on top of your existing training loop.
+      BEV-based perception model &mdash (e.g., can be used for UniAD); just a few lines on top of your existing training loop.
     </p>
     <div class="codeblock">
       <button class="copy-btn" id="copy-code">Copy</button>
